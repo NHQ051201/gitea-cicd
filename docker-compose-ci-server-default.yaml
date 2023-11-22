@@ -1,0 +1,63 @@
+version: "3"
+
+services:
+  # jenkins:
+  #   build: ../jenkins/.
+  #   image: docker_jenkins
+  #   container_name: ci_jenkins
+  #   restart: always
+  #   networks:
+  #     - cicd
+  #   volumes:
+  #     - /var/run/docker.sock:/var/run/docker.sock
+  #     - ../data/jenkins:/var/jenkins_home
+  #   ports:
+  #     - "8081:8080"
+  #     - "50000:50000"
+
+  drone-server:
+    image: drone/drone
+    container_name: ci_drone-server
+    ports:
+      - 8001:80
+      - 9000
+    volumes:
+      - ../data/drone:/var/lib/drone/
+    restart: always
+    environment:
+      - DRONE_GITEA_SERVER=http://$IPADDR:3000
+      - DRONE_GITEA_CLIENT_ID=$GITEAID
+      - DRONE_GITEA_CLIENT_SECRET=$GITEASECRET
+      - DRONE_RPC_SECRET=$DRONE_SECRET
+      - DRONE_SERVER_HOST=$CI_IP:8001
+      - DRONE_SERVER_PROTO=http
+    networks:
+      - cicd
+
+  drone-agent:
+    image: drone/agent
+    container_name: ci_drone-agent
+    command: agent
+    restart: always
+    depends_on:
+      - drone-server
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ../data/drone-agent:/data
+    environment:
+      - DRONE_RPC_SERVER=http://$CI_IP:8001
+      - DRONE_RPC_SECRET=$DRONE_SECRET
+      - DRONE_RUNNER_CAPACITY=1
+      - DRONE_RUNNER_NETWORKS=cicd
+      - DRONE_RUNNER_LABELS=test:test
+    networks:
+      - cicd
+
+volumes:
+  drone: {}
+  drone-agent: {}
+
+networks:
+  cicd:
+    name: cicd
+    external: false

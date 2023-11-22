@@ -1,0 +1,70 @@
+version: "3"
+
+services:
+  # jenkins:
+  #   build: ../jenkins/.
+  #   image: docker_jenkins
+  #   container_name: ci_jenkins
+  #   restart: always
+  #   networks:
+  #     - cicd
+  #   volumes:
+  #     - /var/run/docker.sock:/var/run/docker.sock
+  #     - ../data/jenkins:/var/jenkins_home
+  #   ports:
+  #     - "8081:8080"
+  #     - "50000:50000"
+
+  drone-server:
+    image: drone/drone
+    container_name: ci_drone-server
+    ports:
+      - 8001:80
+      - 9000
+    # volumes:
+    #   - ../data/drone:/var/lib/drone/
+    restart: always
+    environment:
+      - DRONE_GITEA_SERVER=http://quan.gitea.dision:3000
+      - DRONE_GITEA_CLIENT_ID=84545958-1897-44e1-ade4-72225ceb4680
+      - DRONE_GITEA_CLIENT_SECRET=gto_dlg4dikoo257saqz25p25fngvsp2v3hnvlbaeyoyi3osnnjsglhq
+      - DRONE_RPC_SECRET=fe75d1ef26c5bcd8e6f1a6f397e68f6a
+      - DRONE_SERVER_HOST=quan.drone.dision:8001
+      - DRONE_SERVER_PROTO=http
+      - DRONE_PROMETHEUS_PATH="/metrics"
+      - DRONE_PROMETHEUS_ENABLED="true"
+      - DRONE_PROMETHEUS_TOKEN=fe75d1ef26c5bcd8e6f1a6f397e68f6a
+    networks:
+      - cicd
+    extra_hosts:
+      - "quan.gitea.dision:192.168.233.130"
+
+  drone-agent:
+    image: drone/agent
+    container_name: ci_drone-agent
+    command: agent
+    restart: always
+    depends_on:
+      - drone-server
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      # - ../data/drone-agent:/data
+    environment:
+      - DRONE_RPC_SERVER=http://quan.drone.dision:8001
+      - DRONE_RPC_SECRET=fe75d1ef26c5bcd8e6f1a6f397e68f6a
+      - DRONE_RUNNER_CAPACITY=1
+      - DRONE_RUNNER_NETWORKS=cicd
+      - DRONE_RUNNER_LABELS=test:test
+    networks:
+      - cicd
+    extra_hosts:
+      - "quan.gitea.dision:192.168.233.130"
+
+volumes:
+  drone: {}
+  drone-agent: {}
+
+networks:
+  cicd:
+    name: cicd
+    external: false

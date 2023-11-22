@@ -1,0 +1,49 @@
+version: "3"
+
+services:
+  gitea:
+    build: ../gitea/.
+    image: docker_gitea
+    container_name: ci_gitea
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+      - SSH_DOMAIN=$IPADDR
+      - SSH_PORT=222
+      - HTTP_PORT=3000
+      - GITEA__database__DB_TYPE=postgres
+      - GITEA__database__HOST=db:5432
+      - GITEA__database__NAME=gitea
+      - GITEA__database__USER=$DBUSERNAME
+      - GITEA__database__PASSWD=$DBPASSWORD
+    restart: always
+    volumes:
+      - ../data/gitea:/data
+      - ../data/app.ini:/data/gitea/conf/app.ini
+    ports:
+      - "3000:3000"
+      - "222:222"
+    networks:
+      - cicd
+
+  db:
+    image: postgres
+    container_name: ci_db
+    restart: always
+    environment:
+      - POSTGRES_USER=$DBUSERNAME
+      - POSTGRES_PASSWORD=$DBPASSWORD
+      - POSTGRES_DB=gitea
+    networks:
+      - cicd
+    volumes:
+      - ../data/postgres:/var/lib/postgresql/data
+
+volumes:
+  gitea: {}
+  db: {}
+
+networks:
+  cicd:
+    name: cicd
+    external: false

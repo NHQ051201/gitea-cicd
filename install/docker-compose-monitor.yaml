@@ -1,0 +1,57 @@
+version : "3"
+
+services:
+  grafana:
+    image: grafana/grafana
+    container_name: ci_grafana
+    restart: always
+    networks:
+      - cicd
+    # volumes:
+    #   - ../data/grafana:/var/lib/grafana
+    ports:
+      - 4000:3000
+
+  prometheus:
+    image: prom/prometheus
+    container_name: ci_prom
+    restart: always
+    networks:
+      - cicd
+    volumes:
+    #   - ../data/prometheus:/etc/prometheus
+      - ../data/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yml
+    # command:
+    #   - --config.file=/etc/prometheus/prometheus.yml
+    ports:
+      - 9090:9090
+
+  loki:
+    image: grafana/loki
+    container_name: ci_loki
+    restart: always
+    networks:
+      - cicd
+    volumes:
+      - ../data/loki/local-config.yaml:/etc/loki/local-config.yaml
+    # command:
+    #   - -config.file=/etc/loki/loki-local-config.yaml
+    ports:
+      - 3100:3100
+
+  promtail:
+    image: grafana/promtail
+    container_name: ci_promtail
+    restart: always
+    networks:
+      - cicd
+    volumes:
+      - ../data/promtail/config/config.yaml:/etc/promtail/config.yml
+    #   - ../data/promtail/data:/var/lib/promtail
+    # command: 
+    #   - -config.file=/etc/promtail/promtail.yaml
+
+networks:
+  cicd:
+    name: cicd
+    external: false
